@@ -11,19 +11,27 @@ from model.rotation2xyz import Rotation2xyz
 
 class GDM(nn.Module):
     def __init__(self, 
-                 num_actions: int,
-                 num_heads: int, 
-                 hidden_mv_channels: int, 
-                 hidden_s_channels: int,
-                 dataset: str = 'uestc',
-                 cond_mode: str = 'action',
-                 num_blocks: int = 20,
-                 latent_dim: int = 256,
-                 dropout=0.1,
-                 cond_mask_prob: float = 0.,
-                 pos_embed_max_len: int = 5000):
+                num_actions: int,
+                num_heads: int, 
+                hidden_mv_channels: int, 
+                hidden_s_channels: int,
+                dataset: str = 'uestc',
+                cond_mode: str = 'action',
+                num_blocks: int = 20,
+                latent_dim: int = 256,
+                pose_rep: str = 'rot6d',
+                translation: bool = True,
+                glob: bool = True,
+                glob_rot: bool = True,
+                dropout=0.1,
+                cond_mask_prob: float = 0.,
+                pos_embed_max_len: int = 5000):
         super().__init__()
         self.num_actions = num_actions  
+        self.pose_rep = pose_rep
+        self.translation = translation
+        self.glob = glob
+        self.glob_rot = glob_rot
         self.cond_mode = cond_mode
         self.latent_dim = latent_dim
         self.dropout = dropout
@@ -40,6 +48,7 @@ class GDM(nn.Module):
             hidden_s_channels=hidden_s_channels,
             num_blocks=num_blocks,
             attention=SelfAttentionConfig(num_heads=num_heads),
+            pos_encodings=(True, False),
             mlp=MLPConfig())
 
         self.rot2xyz = Rotation2xyz(device='cpu', dataset=dataset)            
@@ -61,15 +70,11 @@ class GDM(nn.Module):
 
             # Repeat the emb for all joints and frames
             emb = emb.squeeze(0).unsqueeze(1).unsqueeze(2).repeat(1, x.shape[3], x.shape[1], 1)  # [batch_size, max_frames, njoints, latent_dim]
-            print("Embedding Shape: ", emb.shape)
-            print("X Shape: ", x.shape)
-  
             mv = rot6d_to_multivectors(x)  # [batch_size, max_frames, njoints, 3, 16]
-            print("MV Shape: ", mv.shape)
-
             outputs_mv, _ = self.model(mv, emb)  # [batch_size, max_frames, njoints, 16]
             
-            return multivectors_to_rot6d(outputs_mv)
+            out = multivectors_to_rot6d(outputs_mv)
+            return out
 
     def mask_cond(self, cond, force_mask=False):
         bs = cond.shape[-2]
@@ -83,6 +88,15 @@ class GDM(nn.Module):
 
     def parameters_wo_clip(self):
         return [p for name, p in self.named_parameters() if not name.startswith('clip_model.')]
+    
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.rot2xyz.smpl_model._apply(fn)
+
+
+    def train(self, *args, **kwargs):
+        super().train(*args, **kwargs)
+        self.rot2xyz.smpl_model.train(*args, **kwargs)    
 
 
 def rot6d_to_multivectors(x: torch.Tensor) -> torch.Tensor:
@@ -113,5 +127,5 @@ def multivectors_to_rot6d(mv: torch.Tensor) -> torch.Tensor:
     x = x[..., :2, :]  # [..., 2, 3]
     x = x.reshape(*x.shape[:-2], 6)  # [..., 6]
     # Permute back to bjft
-    x = x.permute(0, 2, 1, 3)
+    x = x.permute(0, 2, 3, 1)  # [batch_size, njoints, nfeats, max_frames]
     return x  # [batch_size, njoints, nfeats, max_frames]

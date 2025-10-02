@@ -1,0 +1,1 @@
+python -m train.train_gatr --save_dir save/gatr_heads_4 --dataset uestc --cond_mask_prob 0 --lambda_rcxyz 1 --lambda_vel 1 --lambda_fc 1 --gen_guidance_param 1 --batch_size 16 --train_platform_type TensorboardPlatform --overwrite --latent_dim 512 --hidden_mv_channels 32 --hidden_s_channels 32 --layers 8 --num_heads 4
