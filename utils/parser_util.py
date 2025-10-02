@@ -130,8 +130,15 @@ def add_model_options(parser):
     # Prefix completion model
     group.add_argument("--context_len", default=0, type=int, help="If larger than 0, will do prefix completion.")
     group.add_argument("--pred_len", default=0, type=int, help="If context_len larger than 0, will do prefix completion. If pred_len will not be specified - will use the same length as context_len")
-    
-
+    # GATr model only
+    group.add_argument("--num_blocks", default=20, type=int,
+                       help="Number of transformer blocks.")
+    group.add_argument("--num_heads", default=8, type=int,
+                       help="Number of attention heads.")
+    group.add_argument("--hidden_mv_channels", default=32, type=int,
+                       help="Hidden channels for motion features.")
+    group.add_argument("--hidden_s_channels", default=128, type=int,
+                       help="Hidden channels for spatial features.")    
 
 
 def add_data_options(parser):

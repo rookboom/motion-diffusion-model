@@ -4,6 +4,7 @@ from diffusion import gaussian_diffusion as gd
 from diffusion.respace import SpacedDiffusion, space_timesteps
 from utils.parser_util import get_cond_mode
 from data_loaders.humanml_utils import HML_EE_JOINT_NAMES
+from model.gdm import GDM
 
 def load_model_wo_clip(model, state_dict):
     # assert (state_dict['sequence_pos_encoder.pe'][:model.sequence_pos_encoder.pe.shape[0]] == model.sequence_pos_encoder.pe).all()  # TEST
@@ -20,6 +21,26 @@ def create_model_and_diffusion(args, data):
     diffusion = create_gaussian_diffusion(args)
     return model, diffusion
 
+def create_gatr_model(args, data):
+    if hasattr(data.dataset, 'num_actions'):
+        num_actions = data.dataset.num_actions
+    else:
+        num_actions = 1
+    cond_mode = get_cond_mode(args)
+
+    return GDM(
+        num_actions,
+        num_heads=args.num_heads, 
+        hidden_mv_channels=args.hidden_mv_channels, 
+        hidden_s_channels=args.hidden_s_channels,
+        dataset=args.dataset,
+        cond_mode=cond_mode,
+        num_blocks=args.num_blocks,
+        latent_dim=args.latent_dim,
+        dropout=0.1,
+        cond_mask_prob=args.cond_mask_prob,
+        pos_embed_max_len=args.pos_embed_max_len
+        )
 
 def get_model_args(args, data):
 

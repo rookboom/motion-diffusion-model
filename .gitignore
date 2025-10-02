@@ -74,6 +74,8 @@ docs/_build/
 # PyBuilder
 target/
 
+dataset/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -138,3 +140,5 @@ slurm**/
 *.err
 *.slurm
 .vscode/
+
+*.pt

@@ -1,0 +1,21 @@
+einops
+git+https://github.com/dgasmith/opt_einsum.git@1a984b7b75f3e532e7129f6aa13f7ddc3da66e10 # Un-released latest master (pinned for repro); the latest released version 3.3.0 has bugs in shape-based contraction path computations (used for einsum)
+torch-ema
+torch==2.2.1
+torchvision
+
+blobfile
+tqdm
+matplotlib
+scipy
+spacy
+joblib
+clip
+smplx
+xformers==0.0.25
+wandb
+moviepy
+numpy==1.23
+scipy
+spacy
+chumpy
